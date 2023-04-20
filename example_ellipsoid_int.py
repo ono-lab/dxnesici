@@ -3,27 +3,31 @@ import numpy as np
 from dxnesici import DXNESICI
 
 def main():
-    # problem setting
+    # Problem setting
     dim = 80
     dim_int = dim // 2
     dim_co = dim // 2
-    domain_int = np.tile(np.arange(-10, 11, 1), (dim_int, 1))
+    domain_int = [list(range(-10, 11)) for _ in range(dim_int)]
     def ellipsoid_int(x):
         np.round(x[dim_co:])
         coefficients = np.array([math.pow(1e3, i / (dim - 1.)) for i in range(dim)]).reshape(-1,1)
         return np.sum((coefficients * x)**2)
 
-    # the other inputs
+    # The other inputs
     mean = np.ones([dim, 1]) * 2.
     sigma = 1.0
-    lamb = 22 # note that lamb (population size) should be even number
+    lamb = 22
     margin = 1.0 / (dim * lamb)
 
-    dxnesicmi = DXNESICI(dim_co, domain_int, ellipsoid_int, mean, sigma, lamb, margin)
-    _, f_best, x_best = dxnesicmi.optimize(dim * 1e4, 1e-10, print_progress = True)
+    # Running DX-NES-ICI
+    dxnesici = DXNESICI(dim_co, domain_int, ellipsoid_int, mean, sigma, lamb, margin)
+    success, x_best, f_best = dxnesici.optimize(dim * 1e4, 1e-10)
 
-    print("x_best:{}, f_best:{}".format(x_best, f_best))
-
+    if success:
+        print("x_best:{}, f_best:{}".format(x_best, f_best))
+    else:
+        print("Failure: The number of evaluations exceeded the max number!")
+        print("x_best:{}, f_best:{}".format(x_best, f_best))
 
 if __name__ == '__main__':
     main()

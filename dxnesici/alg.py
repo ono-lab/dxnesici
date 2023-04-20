@@ -1,6 +1,9 @@
 import math
+from bisect import bisect_left
+
 import numpy as np
-import scipy
+from scipy.linalg import eigh, eigvalsh, expm
+from scipy.stats import norm
 
 
 def calculate_h_inv(dim):
@@ -18,8 +21,11 @@ class DXNESICI:
         self.dim_int = len(domain_int)
         self.dim = dim_co + self.dim_int
         self.domain_int = domain_int
-        self.lim = (domain_int[:,1:] + domain_int[:,:-1])/2.
-        self.norm_ci = scipy.stats.norm.ppf(1. - margin)
+        for i in range(self.dim_int):
+            self.domain_int[i].sort()
+            assert (len(domain_int[i]) >= 2), f"The number of elements of the domain in an integer variable must be greater than or equal to 2"
+        self.lim = [[(domain_int[i][j] + domain_int[i][j + 1]) / 2. for j in range(len(domain_int[i]) - 1)] for i in range(self.dim_int)]
+        self.norm_ci = norm.ppf(1. - margin)
 
         self.f = f
         self.m = m
@@ -70,18 +76,20 @@ class DXNESICI:
     def optimize(self, max_no_of_evals, target_eval, print_progress = False):
         success = False
         while self.no_of_evals < max_no_of_evals:
-            f_best, x_best = self.next_generation()
+            x_best, f_best = self.next_generation()
             if print_progress:
                 print("{} #Eval:{} f_best:{}".format(self.g, self.no_of_evals, f_best))
             if f_best < target_eval:
                 success = True
                 break
-            eigvals = scipy.linalg.eigvalsh(self.bbT)
-
-            assert (np.min(eigvals) > 1e-30), f"The smallest eigenvalue becomes lower than a limit value!"
-            assert (np.max(eigvals) / np.min(eigvals) < 1e14), f"The condition number becomes higher than a limit value!"
-
-        return success, f_best, x_best
+            eigvals = eigvalsh(self.bbT)
+            if np.min(eigvals) < 1e-30:
+                print("Failure: The smallest eigenvalue became lower than a limit value!")
+                break
+            elif np.max(eigvals) / np.min(eigvals) > 1e14:
+                print("Failure: The condition number became higher than a limit value!")
+                break
+        return success, x_best, f_best
 
 
     def next_generation(self):
@@ -100,7 +108,7 @@ class DXNESICI:
         x = m_cur + self.sigma * self.b @ z
         xbar = np.array([[
             x[i][j] if i < dim_co else
-            self.domain_int[i - dim_co][np.searchsorted(self.lim[i - dim_co], x[i][j])]
+            self.domain_int[i - dim_co][bisect_left(self.lim[i - dim_co], x[i][j])]
             for j in range(lamb)] for i in range(dim)])
         evals = np.array([self.f(np.array(xbar[:, i].reshape(dim, 1))) for i in range(lamb)])
         sorted_indices = np.argsort(evals)
@@ -130,18 +138,18 @@ class DXNESICI:
         ci = (self.norm_ci * self.sigma * np.sqrt(np.diag(bbT_cur)))[dim_co:].reshape(dim_int,1)
         ci_up = m_cur[dim_co:] + ci
         ci_low = m_cur[dim_co:] - ci
-        res = np.array([np.searchsorted(self.lim[i], ci_up[i]) - np.searchsorted(self.lim[i], ci_low[i]) for i in range(dim_int)])
+        res = np.array([bisect_left(self.lim[i], ci_up[i]) - bisect_left(self.lim[i], ci_low[i]) for i in range(dim_int)])
         l_close = np.array([
-            self.lim[i][min(self.lim[i].size - 1, max(0, np.searchsorted(self.domain_int[i], m_cur[dim_co + i]) - 1))]
+            self.lim[i][min(len(self.lim[i]) - 1, max(0, bisect_left(self.domain_int[i], m_cur[dim_co + i]) - 1))]
             for i in range(dim_int)]).reshape(dim_int,1)
-        eta_m[dim_co:][np.where((res <= 1) & (np.sign(grad_delta[dim_co:]) == np.sign(m_cur[dim_co:] - l_close)))] += 1.
+        eta_m[dim_co:][np.where((res <= 1) & ~((grad_delta[dim_co:] < 0.) ^ (m_cur[dim_co:] - l_close < 0.)).reshape(dim_int))] += 1.
         # update parameters
         self.m += self.sigma * eta_m * self.b @ grad_delta
         self.sigma *= np.exp((eta_sigma / 2.) * grad_sigma)
-        self.b = self.b @ scipy.linalg.expm((eta_b / 2.) * grad_b)
+        self.b = self.b @ expm((eta_b / 2.) * grad_b)
         # emphasize expansion
         if state == self.state_move:
-            eigvec = np.array(scipy.linalg.eigh(bbT_cur)[1])
+            eigvec = np.array(eigh(bbT_cur)[1])
             self.tau = np.sort(np.array([
                 (eigvec[:, i].reshape(1, dim) @ self.b @ self.b.T @ eigvec[:, i].reshape(dim, 1)) / (eigvec[:, i].reshape(1, dim) @ bbT_cur @ eigvec[:, i].reshape(dim, 1)) - 1.
                  for i in range(self.dim)]))
@@ -155,18 +163,18 @@ class DXNESICI:
         ci = (self.norm_ci * self.sigma * np.sqrt(np.diag(self.bbT)))[self.dim_co:].reshape(dim_int,1)
         ci_up = self.m[self.dim_co:] + ci
         ci_low = self.m[self.dim_co:] - ci
-        res = np.array([np.searchsorted(self.lim[i], ci_up[i]) - np.searchsorted(self.lim[i], ci_low[i]) for i in range(self.dim_int)])
+        res = np.array([bisect_left(self.lim[i], ci_up[i]) - bisect_left(self.lim[i], ci_low[i]) for i in range(self.dim_int)])
         self.m[dim_co:] = np.array([
             self.m[i + dim_co] if res[i] != 0 else
             self.lim[i][0] - ci[i] if self.m[i + dim_co] <= self.lim[i][0] else
             self.lim[i][-1] + ci[i] if self.lim[i][-1] < self.m[i + dim_co] else
-            self.lim[i][np.searchsorted(self.lim[i], self.m[i + dim_co]) - 1] + ci[i] if self.m[i + dim_co] <= m_cur[i + dim_co] else
-            self.lim[i][np.searchsorted(self.lim[i], self.m[i + dim_co])] - ci[i]
+            self.lim[i][bisect_left(self.lim[i], self.m[i + dim_co]) - 1] + ci[i] if self.m[i + dim_co] <= m_cur[i + dim_co] else
+            self.lim[i][bisect_left(self.lim[i], self.m[i + dim_co])] - ci[i]
             for i in range(dim_int)])
 
         self.g += 1
         self.no_of_evals += lamb
         index_best = sorted_indices[0]
-        f_best = evals[index_best]
         x_best = xbar[:, index_best]
-        return f_best, x_best
+        f_best = evals[index_best]
+        return x_best, f_best
