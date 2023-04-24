@@ -1,5 +1,5 @@
 # DX-NES-ICI
-[DX-NES-ICI]() [1] is a Natural Evolution Strategy (NES) for Mixed-Integer Black-Box Optimization (MI-BBO).
+[DX-NES-ICI](https://arxiv.org/abs/2304.10724) [1] is a Natural Evolution Strategy (NES) for Mixed-Integer Black-Box Optimization (MI-BBO).
 DX-NES-ICI reportedly improves the performance of DX-NES-IC [2], one of the most promising continuous BBO methods, on MI-BBO problems.
 Simultaneously, DX-NES-ICI outperforms CMA-ES w. Margin [3], one of the most leading MI-BBO methods.
 
@@ -53,7 +53,7 @@ success, x_best, f_best = dxnesici.optimize(dim * 1e4, 1e-10)
 
 
 ## Reference
-1. Koki Ikeda and Isao Ono. 2023. Natural Evolution Strategy for Mixed-Integer Black-Box Optimization. In Proceedings of the Genetic and Evolutionary Computation Conference (GECCO ’23). 8 pages. https://doi.org/10.1145/3583131.3590518 [[arXiv]()]
+1. Koki Ikeda and Isao Ono. 2023. Natural Evolution Strategy for Mixed-Integer Black-Box Optimization. In Proceedings of the Genetic and Evolutionary Computation Conference (GECCO ’23). 8 pages. https://doi.org/10.1145/3583131.3590518 [[arXiv](https://arxiv.org/abs/2304.10724)]
 
 2. Masahiro Nomura, Nobuyuki Sakai, Nobusumi Fukushima, and Isao Ono. 2021. Distance-weighted Exponential Natural Evolution Strategy for Implicitly Constrained Black-Box Function Optimization. In IEEE Congress on Evolutionary Computation (CEC ’21). 1099–1106. https://doi.org/10.1109/CEC45853.2021.9504865
 
