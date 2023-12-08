@@ -175,6 +175,6 @@ class DXNESICI:
         self.g += 1
         self.no_of_evals += lamb
         index_best = sorted_indices[0]
-        x_best = xbar[:, index_best]
+        x_best = xbar[:, 0]
         f_best = evals[index_best]
         return x_best, f_best

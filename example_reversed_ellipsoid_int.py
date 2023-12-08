@@ -9,9 +9,10 @@ def main():
     dim_co = dim // 2
     domain_int = [list(range(-10, 11)) for _ in range(dim_int)]
     def reversed_ellipsoid_int(x):
-        np.round(x[dim_co:])
+        xbar = np.array(x)
+        xbar[dim_co:] = np.round(xbar[dim_co:])
         coefficients = np.array([math.pow(1e3, i / (dim - 1.)) for i in range(dim)]).reshape(-1,1)
-        return np.sum((coefficients[dim_co:] * x[:dim_co])**2) + np.sum((coefficients[:dim_co] * x[dim_co:])**2)
+        return np.sum((coefficients[dim_co:] * xbar[:dim_co])**2) + np.sum((coefficients[:dim_co] * xbar[dim_co:])**2)
 
     # The other inputs
     mean = np.ones([dim, 1]) * 2.

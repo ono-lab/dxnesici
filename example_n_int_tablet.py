@@ -8,9 +8,10 @@ def main():
     dim_int = dim // 2
     domain_int = [list(range(-10, 11)) for _ in range(dim_int)]
     def n_int_tablet(x):
-        x[:dim_co] *= 100
-        np.round(x[dim_co:])
-        return np.sum(x**2)
+        xbar = np.array(x)
+        xbar[dim_co:] = np.round(xbar[dim_co:])
+        xbar[:dim_co] *= 100
+        return np.sum(xbar**2)
 
     # The other inputs
     mean = np.ones([dim, 1]) * 2.

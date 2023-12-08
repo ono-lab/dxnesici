@@ -8,8 +8,9 @@ def main():
     dim_co = dim // 2
     domain_int = [[0,1] for _ in range(dim_int)]
     def sphere_one_max(x):
-        np.round(x[dim_co:])
-        return np.sum(x[:dim_co]**2) + dim_int - np.sum(x[dim_co:])
+        xbar = np.array(x)
+        xbar[dim_co:] = np.where(xbar[dim_co:] > 0, 1.0, 0.0)
+        return np.sum(xbar[:dim_co]**2) + dim_int - np.sum(xbar[dim_co:])
 
     # The other inputs
     mean = np.ones([dim, 1])
