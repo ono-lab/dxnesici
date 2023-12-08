@@ -4,7 +4,7 @@ from dxnesici import DXNESICI
 
 def main():
     # Problem setting
-    dim = 80
+    dim = 20
     dim_int = dim // 2
     dim_co = dim // 2
     domain_int = [list(range(-10, 11)) for _ in range(dim_int)]
@@ -17,7 +17,7 @@ def main():
     # The other inputs
     mean = np.ones([dim, 1]) * 2.
     sigma = 1.0
-    lamb = 22
+    lamb = 12
     margin = 1.0 / (dim * lamb)
 
     # Running DX-NES-ICI

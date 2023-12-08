@@ -3,7 +3,7 @@ from dxnesici import DXNESICI
 
 def main():
     # Problem setting
-    dim = 40
+    dim = 20
     dim_int = dim // 2
     dim_co = dim // 2
     domain_int = [[0,1] for _ in range(dim_int)]
@@ -17,7 +17,7 @@ def main():
     mean[:dim_co] *= 2.
     mean[dim_co:] *= 0.5
     sigma = 1.0
-    lamb = 10
+    lamb = 8
     margin = 1.0 / (dim * lamb)
 
     # Running DX-NES-ICI

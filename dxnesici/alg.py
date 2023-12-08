@@ -81,6 +81,7 @@ class DXNESICI:
                 print("{} #Eval:{} f_best:{}".format(self.g, self.no_of_evals, f_best))
             if f_best < target_eval:
                 success = True
+                print("#Itr:{} #Eval:{}".format(self.g, self.no_of_evals))
                 break
             eigvals = eigvalsh(self.bbT)
             if np.min(eigvals) < 1e-30:
