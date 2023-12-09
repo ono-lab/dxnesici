@@ -56,6 +56,8 @@ success, x_best, f_best = dxnesici.optimize(dim * 1e4, 1e-10)
 
 
 ## Version History
+* Version 1.0.3 (2023-12-09)
+    - Update README.
 * Version 1.0.2 (2023-12-09)
     - Fixed a bug in the return value of the best solution.
     - Fixed misleading implementations of functions in sample programs. Note that in these sample programs, benchmark functions return exactly the same values before and after this fix.
