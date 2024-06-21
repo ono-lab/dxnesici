@@ -56,6 +56,9 @@ success, x_best, f_best = dxnesici.optimize(dim * 1e4, 1e-10)
 
 
 ## Version History
+* Version 1.0.4 (2024-6-22)
+    - Fixed bugs in the DX-NES-ICI implementation. This fix improves the search performance on high-dimensional ReversedEllipsoidInt and EllipsoidInt functions [1].
+    - Please note that the corrected implementation has been verified to be identical to the implementation used to obtain the experimental results reported in [1].
 * Version 1.0.3 (2023-12-09)
     - Update README.
 * Version 1.0.2 (2023-12-09)

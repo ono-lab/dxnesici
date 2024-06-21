@@ -139,24 +139,44 @@ class DXNESICI:
         ci = (self.norm_ci * self.sigma * np.sqrt(np.diag(bbT_cur)))[dim_co:].reshape(dim_int,1)
         ci_up = m_cur[dim_co:] + ci
         ci_low = m_cur[dim_co:] - ci
-        res = np.array([bisect_left(self.lim[i], ci_up[i]) - bisect_left(self.lim[i], ci_low[i]) for i in range(dim_int)])
+        resolution = np.array([bisect_left(self.lim[i], ci_up[i]) - bisect_left(self.lim[i], ci_low[i]) for i in range(dim_int)])
         l_close = np.array([
             self.lim[i][min(len(self.lim[i]) - 1, max(0, bisect_left(self.domain_int[i], m_cur[dim_co + i]) - 1))]
             for i in range(dim_int)]).reshape(dim_int,1)
-        eta_m[dim_co:][np.where((res <= 1) & ~((grad_delta[dim_co:] < 0.) ^ (m_cur[dim_co:] - l_close < 0.)).reshape(dim_int))] += 1.
+        condition_bias = (resolution <= 1) & ~(((self.b @ grad_delta)[dim_co:] < 0.0) ^ (m_cur[dim_co:] - l_close < 0.0)).reshape(dim_int)
+        eta_m[dim_co:][np.where(condition_bias)] += 1.0
         # update parameters
         self.m += self.sigma * eta_m * self.b @ grad_delta
         self.sigma *= np.exp((eta_sigma / 2.) * grad_sigma)
         self.b = self.b @ expm((eta_b / 2.) * grad_b)
         # emphasize expansion
+        eigvec = np.array(eigh(bbT_cur)[1])
+        self.bbT = self.b @ self.b.T
+        tau_tmp = np.array(
+            [
+                (eigvec[:, i] @ self.bbT @ eigvec[:, i])
+                / (eigvec[:, i] @ bbT_cur @ eigvec[:, i])
+                - 1.0
+                for i in range(self.dim)
+            ]
+        )
+        tau_index = np.argsort(tau_tmp)[::-1]
+        self.tau = tau_tmp[tau_index]
+        self.gamma = np.maximum(
+            1.0,
+            (1.0 - self.c_gamma) * self.gamma
+            + self.c_gamma * np.sqrt(1.0 + self.d_gamma * self.tau),
+        )
         if state == self.state_move:
-            eigvec = np.array(eigh(bbT_cur)[1])
-            self.tau = np.sort(np.array([
-                (eigvec[:, i].reshape(1, dim) @ self.b @ self.b.T @ eigvec[:, i].reshape(dim, 1)) / (eigvec[:, i].reshape(1, dim) @ bbT_cur @ eigvec[:, i].reshape(dim, 1)) - 1.
-                 for i in range(self.dim)]))
-            self.gamma = np.maximum(1., (1. - self.c_gamma) * self.gamma + self.c_gamma * np.sqrt(1. + self.d_gamma * self.tau))
-            q = self.eye + (self.gamma[0] - 1.) * np.array([eigvec[:, i].reshape(dim, 1) @ eigvec[:, i].reshape(1, dim) for i in range(self.dim) if self.tau[i] > 0.]).sum(axis=0)
-            drt_det_q = math.pow(np.linalg.det(q), 1. / self.dim)
+            q = self.eye + (self.gamma[0] - 1.0) * np.array(
+                [
+                    eigvec[:, tau_index[i]].reshape(dim, 1)
+                    @ eigvec[:, tau_index[i]].reshape(1, dim)
+                    for i in range(self.dim)
+                    if self.tau[i] > 0.0
+                ]
+            ).sum(axis=0)
+            drt_det_q = math.pow(np.linalg.det(q), 1.0 / self.dim)
             self.sigma *= drt_det_q
             self.b = q @ self.b / drt_det_q
         self.bbT = self.b @ self.b.T
@@ -164,12 +184,12 @@ class DXNESICI:
         ci = (self.norm_ci * self.sigma * np.sqrt(np.diag(self.bbT)))[self.dim_co:].reshape(dim_int,1)
         ci_up = self.m[self.dim_co:] + ci
         ci_low = self.m[self.dim_co:] - ci
-        res = np.array([bisect_left(self.lim[i], ci_up[i]) - bisect_left(self.lim[i], ci_low[i]) for i in range(self.dim_int)])
+        resolution = np.array([bisect_left(self.lim[i], ci_up[i]) - bisect_left(self.lim[i], ci_low[i]) for i in range(self.dim_int)])
         self.m[dim_co:] = np.array([
-            self.m[i + dim_co] if res[i] != 0 else
+            self.m[i + dim_co] if resolution[i] != 0 else
             self.lim[i][0] - ci[i] if self.m[i + dim_co] <= self.lim[i][0] else
             self.lim[i][-1] + ci[i] if self.lim[i][-1] < self.m[i + dim_co] else
-            self.lim[i][bisect_left(self.lim[i], self.m[i + dim_co]) - 1] + ci[i] if self.m[i + dim_co] <= m_cur[i + dim_co] else
+            self.lim[i][bisect_left(self.lim[i], self.m[i + dim_co]) - 1] + ci[i] if self.m[i + dim_co] <= l_close[i] else
             self.lim[i][bisect_left(self.lim[i], self.m[i + dim_co])] - ci[i]
             for i in range(dim_int)])
 
