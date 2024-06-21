@@ -16,7 +16,7 @@ with open("README.md", "r") as fh:
 setup(name="dxnesici",
       long_description=long_description,
       long_description_content_type='text/markdown',
-      version="1.0.3",
+      version="1.0.4",
       description="DX-NES-ICI " +
                   "for numerical optimization in Python",
       author="Koki Ikeda",
